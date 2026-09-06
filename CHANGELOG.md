@@ -25,6 +25,7 @@
 
 ### :bug: Fixed
 
+- Send example values in query and path as `true` / `false` / `null`, omitting optional nulls.
 - Crash on repeat runs when an operation's request body declares several media types.
 - Omit optional query parameters generated as `null` from the request.
 - False positive `ignored_auth` for APIs that reject unauthenticated requests with 403.
