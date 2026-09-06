@@ -166,7 +166,7 @@ See the [Allure Integration guide](guides/allure.md) for full details including 
     If you cannot install the `allure` extra, export JUnit XML and copy it into an Allure results directory:
 
     ```bash
-    schemathesis run your_schema.yaml
+    schemathesis run your_schema.yaml --report junit
     cp schemathesis-report/*.xml allure-results/
     allure generate allure-results
     allure open

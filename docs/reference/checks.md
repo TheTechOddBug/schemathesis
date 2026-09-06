@@ -60,6 +60,8 @@ Catches server-side errors (5xx status codes) and GraphQL `errors` arrays.
 
 For GraphQL APIs, this check validates both transport-level errors and GraphQL semantics.
 
+Accepts `expected-statuses` (default `["2xx", "3xx", "4xx"]`) to define which status codes are not treated as server errors.
+
 ---
 
 ### `status_code_conformance`
@@ -147,6 +149,8 @@ Validates the response body against its JSON Schema definition. Catches format m
 
 Errors are deduplicated per schema path. Use `[output]` configuration options to expand or truncate large payloads in failure messages.
 
+Accepts [`validate-formats`](configuration.md#checksresponse_schema_conformancevalidate-formats) (default `true`) to control whether `format` keywords are enforced. Turning it off is a common first step when format violations crowd out structural ones — see [Triaging Failures](../guides/triage.md).
+
 #### Server-Sent Events
 
 For `text/event-stream` responses, Schemathesis validates each event individually against the `itemSchema` defined in the OpenAPI 3.2 response. Each failure is prefixed with its event index:
@@ -173,7 +177,7 @@ Verifies the API properly rejects invalid input data. When Schemathesis generate
 - API accepted schema-violating request
 
 Invalid data should have been rejected
-Expected: 400, 401, 403, 404, 422, 428, 5xx
+Expected: 400, 401, 403, 404, 405, 406, 409, 422, 428, 5xx
 Invalid component: Missing `Accept-Language` at header
 ```
 

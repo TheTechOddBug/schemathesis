@@ -2,6 +2,9 @@
 
 This page collects articles, papers, videos, tutorials, and integrations about Schemathesis written by the community. These resources provide additional perspectives, use cases, and implementation examples.
 
+!!! warning "Third-party content"
+    These resources are not maintained by the Schemathesis project. Entries marked **Predates v4** were written against Schemathesis v3 and show APIs or CLI flags that no longer exist. Their concepts still apply — translate the code with the [v3 to v4 migration guide](migration.md) before running it.
+
 ## Integrations
 
 - [TraceCov](https://docs.tracecov.sh) by **@Stranger6667**
@@ -42,6 +45,8 @@ This page collects articles, papers, videos, tutorials, and integrations about S
 
     - **Date**: 15 Oct 2023
 
+    - **Predates v4**: Published during the v3 series; the tutorial steps run inside a hosted session and could not be re-verified against v4.
+
 ## Articles
 
 - [Stop Writing API Tests Manually — Let Your OpenAPI Spec Do the Work](https://www.davidmello.com/software-testing/test-automation/automated-api-testing-with-schemathesis) by **David Mello**
@@ -56,11 +61,11 @@ This page collects articles, papers, videos, tutorials, and integrations about S
 
     - **Date**: Jul 2025
 
-- [Create a Cracker of an Open API Contract with VS Code, Spectral, Prism and Schemathesis](https://blog.hungovercoders.com/datagriff/2023/12/22/create-a-cracker-of-an-open-api-contract-with-vs-code-spectral-prism-and-schemathesis.html) by **@dataGriff**
+- [Create a Cracker of an Open API Contract with VS Code, Spectral, Prism and Schemathesis](https://hungovercoders.com/blog/2024-12-22-create-a-cracker-of-an-open-api-contract-with-vs-code-spectral-prism-and-schemathesis/) by **@dataGriff**
 
     - **Description**: Detailed walkthrough of contract-first API design and testing workflow.
 
-    - **Date**: 22 Dec 2023
+    - **Date**: 22 Dec 2024
 
 - [Boost Your FastAPI Reliability with Schemathesis Automated Testing](https://medium.com/@jeremy3/boost-your-fastapi-reliability-with-schemathesis-automated-testing-e8b70ff704f6) by **@Jeremy**
 
@@ -68,11 +73,15 @@ This page collects articles, papers, videos, tutorials, and integrations about S
 
     - **Date**: 17 Jul 2023
 
+    - **Predates v4**: Uses `--experimental=openapi-3.1`, which is gone — OpenAPI 3.1 is supported natively.
+
 - [Implementing Schemathesis at PayLead](https://medium.com/paylead/implementing-schemathesis-at-paylead-a469a5d43626) by **Jérémy Pelletier** at **PayLead**
 
     - **Description**: Case study including custom hooks, stateful testing, and CI/CD integration.
 
     - **Date**: 29 May 2023
+
+    - **Predates v4**: The hook code targets the removed `schemathesis.cli.*` and `schemathesis.runner.events` APIs, plus `GenericResponse`, `case.endpoint`, and the `--stateful links`, `--cassette-path`, and `--junit-xml` flags.
 
 - [Auto-Generating & Validating OpenAPI Docs in Rust: A Streamlined Approach with Utoipa and Schemathesis](https://identeco.de/en/blog/generating_and_validating_openapi_docs_in_rust/) by **identeco**
 
@@ -80,17 +89,23 @@ This page collects articles, papers, videos, tutorials, and integrations about S
 
     - **Date**: 01 Jun 2023
 
+    - **Predates v4**: The CI snippet uses `--data-generation-method` (now `--mode`) and `--validate-schema`, which was removed.
+
 - [Testing APIFlask with schemathesis](http://blog.pamelafox.org/2023/02/testing-apiflask-with-schemathesis.html) by **@pamelafox**
 
     - **Description**: Technical guide for testing APIFlask applications using Schemathesis.
 
     - **Date**: 27 Feb 2023
 
+    - **Predates v4**: Uses `schemathesis.from_wsgi()`, `case.call_wsgi()`, and standalone `case.validate_response()` — replaced by `schemathesis.openapi.from_wsgi()` and `case.call_and_validate()`.
+
 - [Using Hypothesis and Schemathesis to Test FastAPI](https://testdriven.io/blog/fastapi-hypothesis/) by **@amalshaji**
 
     - **Description**: Technical overview of property-based testing in FastAPI with Hypothesis and Schemathesis.
 
     - **Date**: 06 Sep 2022
+
+    - **Predates v4**: Uses `from schemathesis.specs.openapi.loaders import from_asgi`, `schemathesis.from_uri()`, `case.call_asgi()`, and standalone `case.validate_response()`, none of which exist — plus the `--endpoint`, `--method`, `--stateful=links`, and `--hypothesis-seed` flags.
 
 - [How to use Schemathesis to test Flask API in GitHub Actions](https://notes.lina-is-here.com/2022/08/04/schemathesis-docker-compose.html) by **@lina-is-here**
 
@@ -104,11 +119,15 @@ This page collects articles, papers, videos, tutorials, and integrations about S
 
     - **Date**: 07 Sep 2021
 
+    - **Predates v4**: Uses the removed `register_string_format`, `register_check`, and `register_target` entry points, `schemathesis.from_uri()`, and the `--pre-run` hook mechanism.
+
 - [Schemathesis: property-based testing for API schemas](https://dygalo.dev/blog/schemathesis-property-based-testing-for-api-schemas/) by **@Stranger6667**
 
     - **Description**: Introduction to the concepts behind Schemathesis and property-based testing for APIs.
 
     - **Date**: 26 Nov 2019
+
+    - **Predates v4**: Uses `schemathesis.from_uri()` and the `endpoint=` / `-E` / `-M` filters, all replaced by `schemathesis.openapi.from_url()` and the `--include-*` / `--exclude-*` options.
 
 ## Videos
 
@@ -124,11 +143,13 @@ This page collects articles, papers, videos, tutorials, and integrations about S
 
     - **Date**: 14 Feb 2023
 
-- [Automated Testing with Schemathesis](https://appdev.consulting.redhat.com/tracks/contract-first/automated-testing-with-schemathesis.html) with [video tutorial](https://www.youtube.com/watch?v=4r7OC-lBKMg) by **Red Hat**
+- [Automated Testing with Schemathesis](https://www.youtube.com/watch?v=4r7OC-lBKMg) by **Red Hat**
 
-    - **Description**: Hands-on tutorial for implementing API testing with Schemathesis.
+    - **Description**: Hands-on tutorial for implementing API testing with Schemathesis. The companion write-up on `appdev.consulting.redhat.com` has been taken offline.
 
     - **Date**: 09 Feb 2023
+
+    - **Predates v4**: Demonstrates `schemathesis.from_path()` and assigning `schema.base_url`; use `schemathesis.openapi.from_path()` and `--url` instead.
 
 - [Effective API schemas testing](https://youtu.be/VVLZ25JgjD4) from DevConf.cz by **@Stranger6667**
 

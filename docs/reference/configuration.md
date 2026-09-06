@@ -243,7 +243,7 @@ Rules:
 
     When `fail-on` is configured, Schemathesis will exit with code 1 if any of the specified warnings are encountered, even if all checks pass. This is useful for CI/CD pipelines that should fail when configuration or test data issues are detected.
 
-    Available warnings:
+    Available warnings (see the [Warnings reference](warnings.md) for details):
 
     - `missing_auth`: API returns only 401/403 responses, suggesting missing or invalid authentication
     - `base_url_mismatch`: every response is 404 and `--url` omits the path declared in the schema
@@ -251,7 +251,10 @@ Rules:
     - `validation_mismatch`: API rejects most generated data with 4xx errors, suggesting schema/validation mismatch
     - `missing_deserializer`: Response has structured schema but no registered deserializer for validation
     - `unused_openapi_auth`: Configured OpenAPI auth scheme is not defined in the schema
+    - `unsupported_regex`: A `pattern` in the schema cannot be used to generate values
     - `method_not_allowed`: Operation consistently returned `405 Method Not Allowed`; subsequent phases skip it
+    - `constants_extraction`: A source registered with `@schemathesis.python.constants` produced nothing usable
+    - `unmatched_filter`: A filter expression matched no API operation
 
 !!! info "CLI Only"
     This option only applies when using the `schemathesis run` command. The pytest plugin uses pytest's own warning system.
@@ -681,13 +684,15 @@ These settings can only be applied at the project level.
 !!! note "" 
 
     **Type**: `Array[String]`  
-    **Default**: `[]`  
+    **Default**: `["get", "put", "post", "delete", "options", "patch", "trace", "query"]`  
 
     Lists the HTTP methods to use when generating test cases with methods not specified in the API during the **coverage** phase.
     Schemathesis will limit negative testing of unexpected methods to those in the array; if omitted, all HTTP methods not specified in the spec are applied.
     Set to an empty array to disable unsupported method testing entirely.
 
     Responses to these requests are validated by the [`unsupported_method`](checks.md#unsupported_method) check, and the `OPTIONS` response additionally by [`allow_header_conformance`](checks.md#allow_header_conformance).
+
+    Narrow this list when unsupported-method probes produce noise you do not intend to act on — see [Triaging Failures](../guides/triage.md).
 
     ```toml
     [phases.coverage]
@@ -698,14 +703,28 @@ These settings can only be applied at the project level.
     # unexpected-methods = []
     ```
 
+#### `phases.fuzzing.error-feedback.enabled`
+
+!!! note ""
+
+    **Type**: `Boolean`  
+    **Default**: `true`  
+
+    Derive schema constraints from rejected requests during the **fuzzing** phase. When the API rejects a positive-mode request with a recognised 4xx validation envelope, the reported rules (required fields, formats, bounds, enums, patterns) are applied to the operation's schema so later test cases are more likely to be accepted. See [Adaptive Testing](../explanations/adaptive-testing.md).
+
+    ```toml
+    [phases.fuzzing.error-feedback]
+    enabled = false
+    ```
+
 #### `phases.stateful.max-steps`
 
 !!! note ""
 
     **Type**: `Integer (≥2)`  
-    **Default**: `null`  
+    **Default**: `6`  
 
-    Specifies the maximum number of stateful steps (i.e., transitions between states) to perform in the **stateful** phase. When set, Schemathesis will stop exploring new state transitions once this limit is reached, even if additional valid transitions are available.
+    Specifies the maximum number of stateful steps (i.e., transitions between states) to perform in the **stateful** phase. Schemathesis stops exploring new state transitions once this limit is reached, even if additional valid transitions are available.
 
     ```toml
     [phases.stateful]
@@ -897,6 +916,32 @@ These settings can only be applied at the project level.
     !!! note
         Reactive refresh covers tokens from dynamic schemes and from `@schemathesis.auth(retry_on=...)` / `schema.auth(retry_on=...)` registrations. `retry_on` codes are pooled across every configured scheme, and a triggering status refreshes all cached tokens.
 
+#### `auth.wfc`
+
+!!! note ""
+
+    **Type:** `Object`  
+    **Default:** `null`  
+
+    Authenticate using a [Web Fuzzing Commons](https://github.com/WebFuzzing/Commons) auth file. Schemathesis reads the login definitions from the file and applies the resulting credentials to every request.
+
+    ```toml
+    [auth.wfc]
+    path = "./market-auth.yaml"
+    ```
+
+    | Field | Default | Description |
+    |-------|---------|-------------|
+    | `path` | required | Path to a WFC authentication file (`.json`, `.yaml`, or `.yml`) |
+    | `user` | `null` | Name of the auth entry to use. When omitted and the file lists more than one entry, Schemathesis tries each entry in document order per operation, moving on from the ones an operation rejects with `403` |
+    | `external_url` | `null` | Replace the host and port of every `externalEndpointURL` in the file. Accepts `HOST:PORT`, or a URL without a path to replace the scheme as well |
+    | `refresh_interval` | `300` | Seconds to cache login credentials before re-authenticating |
+
+    Corresponds to the `--auth-wfc`, `--auth-wfc-user`, and `--auth-wfc-external-url` CLI options.
+
+    !!! note
+        `[auth.wfc]`, `[auth.basic]`, and `[auth.openapi.*]` / `[auth.dynamic.openapi.*]` are mutually exclusive — configuring more than one is an error.
+
 ### Checks
 
 #### `checks.enabled`
@@ -929,6 +974,7 @@ These settings can only be applied at the project level.
       - `status_code_conformance`
       - `content_type_conformance`
       - `response_schema_conformance`
+      - `response_headers_conformance`
       - `positive_data_acceptance`
       - `negative_data_rejection`
       - `use_after_free`
@@ -951,6 +997,8 @@ These settings can only be applied at the project level.
     **Default:** `true`  
 
     Validates `format` keywords (`date-time`, `uuid`, `email`, ...) while checking a response against its schema. Set to `false` to accept values that match the schema type but not its declared format — for example a `date-time` field returning `2018-03-26 14:43:59+00:00` (a space instead of the RFC 3339 `T`).
+
+    Turn this off when format violations dominate your first run and you want to see the structural failures underneath — see [Triaging Failures](../guides/triage.md).
 
     ```toml
     [checks]
@@ -1267,6 +1315,8 @@ The following settings control how Schemathesis generates test data for your API
 
     Controls whether to allow the generation of 'NULL' bytes (0x00) within strings. Some systems may not handle these bytes correctly.
 
+    Set it to `false` when failures trace back to `\x00` in generated strings rather than to your own logic — see [Triaging Failures](../guides/triage.md).
+
     ```toml
     [generation]
     allow-x00 = false
@@ -1285,6 +1335,9 @@ The following settings control how Schemathesis generates test data for your API
     [generation]
     allow-extra-parameters = false
     ```
+
+!!! info "Configuration file only"
+    Unlike its siblings in this section, this option has no CLI flag. Set it in `schemathesis.toml`.
 
 
 #### `generation.exclude-header-characters`
@@ -1306,7 +1359,7 @@ The following settings control how Schemathesis generates test data for your API
 !!! note ""
 
     **Type:** `String`  
-    **Default:** `null`  
+    **Default:** `"utf-8"`  
 
     The codec used for generating strings. Defines the character encoding for string generation.
 
@@ -1342,6 +1395,8 @@ The following settings control how Schemathesis generates test data for your API
 
     Controls whether to generate security parameters during testing. When enabled, Schemathesis will include appropriate security-related parameters in test data based on the API's security schemes defined in the schema.
 
+    Set it to `false` when generated credentials overwrite the ones you configured and every response comes back `401`/`403` — see [Triaging Failures](../guides/triage.md).
+
     ```toml
     [generation]
     with-security-parameters = false
@@ -1354,7 +1409,7 @@ The following settings control how Schemathesis generates test data for your API
     **Type:** `Boolean`  
     **Default:** `true`  
 
-    Controls whether to use `\x00` bytes in generated GraphQL queries. Applicable only for GraphQL API testing.
+    Controls whether `null` is used for optional arguments in generated GraphQL queries. Applicable only for GraphQL API testing.
 
     ```toml
     [generation]

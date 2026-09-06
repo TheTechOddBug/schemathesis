@@ -17,8 +17,16 @@ The major behavior changes include:
 
 There are a few commands that were removed:
 
-- `schemathesis replay`. This command had limited usefulness. A better version could be re-introduced in the future.
 - `schemathesis auth` & `schemathesis upload`. Removed as Schemathesis.io has been discontinued.
+
+`schemathesis replay` still exists, but replays something different. In v3 it replayed a VCR cassette recorded with `--store-network-log`. In v4, `st replay` re-runs the crash files that `st run` and `st fuzz` record automatically for failing cases:
+
+```bash
+st replay                    # replay every recorded crash for the project
+st replay Xt9Kp2             # replay a single case by ID
+```
+
+To replay a v3-style cassette, re-run the operations from the schema instead. See [Replaying Failures](https://schemathesis.readthedocs.io/en/stable/guides/crash-reproduction/).
 
 The following CLI options were removed without replacement:
 
@@ -54,7 +62,7 @@ The following options have alternatives:
 | `--hypothesis-derandomize` | `--generation-deterministic` |
 | `--hypothesis-max-examples` | `--max-examples` |
 | `--hypothesis-phases` / `--hypothesis-no-phases` | See `--phases` below |
-| `--hypothesis-seed` | `--generation-seed` |
+| `--hypothesis-seed` | `--seed` |
 | `--hypothesis-suppress-health-check` | `--suppress-health-check` |
 | `--junit-xml` | `--report=junit` |
 | `--method` | `--include-method` / `--exclude-method` |

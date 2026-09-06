@@ -4,7 +4,20 @@ This reference details all the command-line options available in the Schemathesi
 
 ## Global Options
 
-These options apply to all Schemathesis commands:
+These options apply to all Schemathesis commands and must be placed **before** the command name:
+
+```console
+$ st --no-color run openapi.yaml
+```
+
+#### `--config-file PATH`
+
+!!! note ""
+
+    **Type**: `String (file path)`  
+    **Default**: `null`  
+
+    Path to the `schemathesis.toml` file to use. By default Schemathesis looks for `schemathesis.toml` in the current directory and its parents. See [Configuration](../configuration.md).
 
 #### `--no-color`
 
@@ -12,11 +25,19 @@ These options apply to all Schemathesis commands:
 
     Disables ANSI color output in the terminal. Use this option when running in environments where color codes may cause issues or when redirecting output to files.
 
+#### `--version`
+
+!!! note ""
+
+    Print the Schemathesis version and exit.
+
+The `run` and `fuzz` commands additionally accept `--no-color` and `--force-color` after the command name:
+
 #### `--force-color`
 
 !!! note ""
 
-    Forces the use of ANSI color escape codes in terminal output, even in environments where Schemathesis would normally disable colors.
+    Forces the use of ANSI color escape codes in terminal output, even in environments where Schemathesis would normally disable colors. Not available on `st replay`.
 
 ## `run`
 
@@ -107,9 +128,9 @@ $ st run [OPTIONS] SCHEMA
 
     **Type**: `String or comma-separated list`  
     **Default**: All warnings enabled  
-    **Possible values**: `off`, `missing_auth`, `missing_test_data`, `validation_mismatch`, `missing_deserializer`, `unused_openapi_auth`, `method_not_allowed`  
+    **Possible values**: `off`, `missing_auth`, `base_url_mismatch`, `missing_test_data`, `validation_mismatch`, `missing_deserializer`, `unused_openapi_auth`, `unsupported_regex`, `method_not_allowed`, `constants_extraction`, `unmatched_filter`  
 
-    Control which warnings are displayed during test execution. Warnings help identify test configuration issues but don't stop execution.
+    Control which warnings are displayed during test execution. Warnings help identify test configuration issues but don't stop execution. See the [Warnings reference](warnings.md) for what each one signals.
 
     ```console
     # Disable all warnings
@@ -130,9 +151,9 @@ $ st run [OPTIONS] SCHEMA
 
     **Type**: `Comma-separated list`  
     **Default**: All checks enabled  
-    **Possible values**: `not_a_server_error`, `status_code_conformance`, `content_type_conformance`, `response_headers_conformance`, `response_schema_conformance`, `negative_data_rejection`, `positive_data_acceptance`, `use_after_free`, `ensure_resource_availability`, `ignored_auth`, `all`  
+    **Possible values**: `not_a_server_error`, `status_code_conformance`, `content_type_conformance`, `response_headers_conformance`, `response_schema_conformance`, `negative_data_rejection`, `positive_data_acceptance`, `missing_required_header`, `unsupported_method`, `allow_header_conformance`, `use_after_free`, `ensure_resource_availability`, `ignored_auth`, `all`  
 
-    Specifies which checks to run against API responses.
+    Specifies which checks to run against API responses. See the [Checks reference](checks.md) for what each one validates.
 
     ```console
     $ st run openapi.yaml --checks not_a_server_error,response_schema_conformance
@@ -144,7 +165,7 @@ $ st run [OPTIONS] SCHEMA
 
     **Type**: `Comma-separated list`  
     **Default**: `[]`  
-    **Possible values**: `not_a_server_error`, `status_code_conformance`, `content_type_conformance`, `response_headers_conformance`, `response_schema_conformance`, `negative_data_rejection`, `positive_data_acceptance`, `use_after_free`, `ensure_resource_availability`, `ignored_auth`, `all`  
+    **Possible values**: `not_a_server_error`, `status_code_conformance`, `content_type_conformance`, `response_headers_conformance`, `response_schema_conformance`, `negative_data_rejection`, `positive_data_acceptance`, `missing_required_header`, `unsupported_method`, `allow_header_conformance`, `use_after_free`, `ensure_resource_availability`, `ignored_auth`, `all`  
 
     Specifies which checks to skip during testing.
 
@@ -210,15 +231,15 @@ $ st run [OPTIONS] SCHEMA
 
 ### Filtering
 
-Schemathesis provides various ways to filter which operations are tested:
+Schemathesis provides various ways to filter which operations are tested. `TYPE` is one of `path`, `method`, `name`, `tag`, or `operation-id`.
 
 #### `--include-TYPE VALUE` / `--exclude-TYPE VALUE`
 
 !!! note ""
 
-    **Type**: `String`  
+    **Type**: `String (multiple allowed)`  
 
-    Include or exclude operations by exact match on path, method, tag, or operation-id.
+    Include or exclude operations by exact match on path, method, name, tag, or operation-id.
 
     ```console
     $ st run openapi.yaml --include-tag users
@@ -231,7 +252,7 @@ Schemathesis provides various ways to filter which operations are tested:
 
     **Type**: `String (regex pattern)`  
 
-    Include or exclude operations matching a regular expression pattern on path, method, tag, or operation-id.
+    Include or exclude operations matching a regular expression pattern on path, method, name, tag, or operation-id.
 
     ```console
     $ st run openapi.yaml --include-path-regex "/api/v1/.*"
@@ -311,9 +332,9 @@ The following options control how Schemathesis makes network requests to the API
 !!! note ""
 
     **Type**: `String`  
-    **Default**: first entry  
+    **Default**: `null`  
 
-    Name of the entry to use when the auth file defines several users.
+    Name of the entry to use when the auth file defines several users. When omitted and the file lists more than one entry, Schemathesis tries each entry in document order per operation, moving on from the ones an operation rejects with `403`, and keeping the first entry the operation admits.
 
     ```console
     $ st run openapi.yaml --auth-wfc ./market-auth.yaml --auth-wfc-user admin
@@ -379,6 +400,7 @@ The following options control how Schemathesis makes network requests to the API
 !!! note ""
 
     **Type**: `Integer`  
+    **Default**: `30`  
     **Range**: `>=0`  
 
     Maximum number of redirects to follow for each network request during tests. Set to `0` to disable redirect following entirely.
@@ -531,6 +553,18 @@ These options control the reporting and output format of test results:
     $ st run openapi.yaml --report-json-path ./report.json
     ```
 
+#### `--report-allure-path DIRECTORY`
+
+!!! note ""
+
+    **Type**: `String (directory path)`  
+
+    Directory for Allure result files. Requires the `allure` extra (`pip install schemathesis[allure]`). See the [Allure Integration guide](../guides/allure.md).
+
+    ```console
+    $ st run openapi.yaml --report-allure-path ./allure-results
+    ```
+
 #### `--report-preserve-bytes`
 
 !!! note ""
@@ -579,7 +613,7 @@ These options control how Schemathesis generates test data for API testing:
 !!! note ""
 
     **Type**: `String`  
-    **Default**: `positive`  
+    **Default**: `all`  
     **Possible values**: `positive`, `negative`, `all`  
 
     Test data generation mode. Controls whether Schemathesis generates valid data, invalid data, or both.
@@ -665,6 +699,7 @@ These options control how Schemathesis generates test data for API testing:
 !!! note ""
 
     **Type**: `String`  
+    **Default**: `utf-8`  
 
     The codec used for generating strings. Defines the character encoding for string generation.
 
